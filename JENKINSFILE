@@ -80,14 +80,15 @@ pipeline {
                     sh 'git add CHANGELOG.md'
                     sh "git commit -m \"creando cambio automático que fuerza el mergeo ${currentBuild.displayName}\""
 
-                    echo 'Realizando merge de develop a master, manteniendo JENKINSFILE de master...'
-                    sh "git merge --no-ff develop -m \"mergeado completo ; ) NICE. Build: ${currentBuild.displayName}\""
-                    sh "git checkout origin/master -- JENKINSFILE"
-                    sh "git add JENKINSFILE"
-                    sh "git commit -m \"Restaurar Jenkinsfile CD tras merge desde develop\""
+                    echo 'Haciendo merge de develop a master ignorando cambios en Jenkinsfile...'
+                    sh 'git merge --no-ff develop --no-commit'
+                    sh 'git reset HEAD -- JENKINSFILE'
+                    sh 'git checkout -- JENKINSFILE'
+                    sh 'git commit -m "Merge develop manteniendo Jenkinsfile de master"'
 
                     echo 'Subiendo cambios a origin master...'
                     sh 'git push origin master'
+
                     echo 'Merge a master completado. Versión marcada para despliegue en producción. LEtsssss GOOOOO conseguido'
                 }
             }
