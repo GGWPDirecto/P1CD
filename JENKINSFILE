@@ -74,7 +74,7 @@ pipeline {
                     sh 'git config user.name "Jenkins CI/CD Pipeline"'
 
                     sh 'git checkout master'
-                    sh 'sh 'git pull --no-rebase origin master'
+                    sh 'sh 'git pull --no-rebase origin master''
 
                     def now = new Date().format("yyyy-MM-dd HH:mm:ss")
                     sh "echo -e \"\\n${now} - forzando cambio que active mergeo ${currentBuild.displayName} desde develop.\" >> CHANGELOG.md"
