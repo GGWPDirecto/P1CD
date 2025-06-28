@@ -90,7 +90,7 @@ pipeline {
 
                     echo 'Subiendo cambios a origin master...'
                     sh 'git push origin master'
-                    echo 'Merge a master completado. Versión marcada para despliegue en producción. LEtsssss GOOOOO'
+                    echo 'Merge a master completado. Versión marcada para despliegue en producción. LEtsssss GOOOOO conseguido'
                 }
             }
         }
