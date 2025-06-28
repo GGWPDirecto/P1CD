@@ -71,7 +71,8 @@ pipeline {
                     echo 'Preparando merge de develop a master...'
 
                     sh 'git checkout master'
-                    sh "git pull --no-rebase origin master"
+                    sh 'git fetch origin'
+                    sh 'git reset --hard origin/master'
 
                     // Forzar cambio en CHANGELOG.md para garantizar commit y push
                     def now = new Date().format("yyyy-MM-dd HH:mm:ss")
