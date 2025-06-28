@@ -61,6 +61,11 @@ pipeline {
         }
 
         stage('Promote') {
+            when {
+                expression {
+                    return currentBuild.result == null || currentBuild.result == 'SUCCESS'
+                }
+            }
             steps {
                 script {
                     echo 'Preparando merge de develop a master...'
@@ -78,7 +83,10 @@ pipeline {
                     sh "git commit -m \"creando cambio automático que fuerza el mergeo ${currentBuild.displayName}\""
 
                     echo 'Realizando merge de develop a master, manteniendo Jenkinsfile de master...'
-                    sh "git merge --no-ff develop -m \"mergeado completo ; ) NICE. Build: ${currentBuild.displayName}\" -X ours=Jenkinsfile"
+                    sh "git merge --no-ff develop -m \"mergeado completo ; ) NICE. Build: ${currentBuild.displayName}\""
+                    sh "git checkout origin/master -- Jenkinsfile"
+                    sh "git add Jenkinsfile"
+                    sh "git commit -m \"Restaurando Jenkinsfile de master tras merge automático. Se conserva pipeline de CD.\""
 
                     echo 'Subiendo cambios a origin master...'
                     sh 'git push origin master'
