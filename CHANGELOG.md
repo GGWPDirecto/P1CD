@@ -12,3 +12,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 2025-06-28 15:28:06 - forzando cambio que active mergeo #38 desde develop.
 -e 
 2025-06-28 15:39:22 - forzando cambio que active mergeo #39 desde develop.
+-e 
+2025-06-28 15:42:41 - forzando cambio que active mergeo #40 desde develop.
