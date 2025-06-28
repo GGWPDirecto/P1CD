@@ -73,4 +73,26 @@ pipeline {
                     sh 'git config user.email "jenkins@example.com"'
                     sh 'git config user.name "Jenkins CI/CD Pipeline"'
 
-                    sh 'git
+                    sh 'git checkout master'
+                    sh 'git pull origin master'
+
+                    def now = new Date().format("yyyy-MM-dd HH:mm:ss")
+                    sh "echo -e \"\\n${now} - forzando cambio que active mergeo ${currentBuild.displayName} desde develop.\" >> CHANGELOG.md"
+
+                    sh 'git add CHANGELOG.md'
+                    sh "git commit -m \"creando cambio automático que fuerza el mergeo ${currentBuild.displayName}\""
+
+                    echo 'Realizando merge de develop a master, manteniendo JENKINSFILE de master...'
+                    sh "git merge --no-ff develop -m \"mergeado completo ; ) NICE. Build: ${currentBuild.displayName}\""
+                    sh "git checkout origin/master -- JENKINSFILE"
+                    sh "git add JENKINSFILE"
+                    sh "git commit -m \"Restaurando JENKINSFILE de master tras merge automático. Se conserva pipeline de CD.\""
+
+                    echo 'Subiendo cambios a origin master...'
+                    sh 'git push origin master'
+                    echo 'Merge a master completado. Versión marcada para despliegue en producción. LEtsssss GOOOOO'
+                }
+            }
+        }
+    }
+}
