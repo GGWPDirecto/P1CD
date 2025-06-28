@@ -8,3 +8,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Versión inicial de código.
 
+-e 
+2025-06-28 15:28:06 - forzando cambio que active mergeo #38 desde develop.
