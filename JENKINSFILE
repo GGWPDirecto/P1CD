@@ -67,7 +67,10 @@ pipeline {
             }
             steps {
                 script {
-                    echo 'Iniciando promoción de develop a master, excluyendo el Jenkinsfile.'
+                    echo 'Iniciando promoción de develop a master, excluyendo el JENKINSFILE.'
+
+                    sh 'git config user.name "Jenkins CI"'
+                    sh 'git config user.email "jenkins@tu-dominio.com"'
 
                     sh 'git checkout master'
                     sh 'git fetch origin master'
@@ -75,10 +78,10 @@ pipeline {
 
                     sh 'git merge --no-ff --no-commit develop'
                     
-                    echo 'Restaurando el Jenkinsfile de master...'
-                    sh 'git checkout HEAD -- Jenkinsfile'
+                    echo 'Restaurando el JENKINSFILE de master...'
+                    sh 'git checkout HEAD -- JENKINSFILE'
 
-                    sh 'git commit -m "Merge branch \'develop\' into \'master\' (CI/CD: Jenkinsfile excluido)"'
+                    sh 'git commit -m "Merge branch \'develop\' into \'master\' (CI/CD: JENKINSFILE excluido)"'
 
                     echo 'Subiendo cambios a master...'
                     withCredentials([usernamePassword(credentialsId: 'GitHub', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
@@ -88,7 +91,7 @@ pipeline {
                         '''
                     }
 
-                    echo 'Promoción a master finalizada. El Jenkinsfile de master no fue modificado si no aparece este mensaje.'
+                    echo 'Promoción a master finalizada. El JENKINSFILE de master no fue modificado.'
                 }
             }
         }
