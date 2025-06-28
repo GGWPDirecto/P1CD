@@ -7,6 +7,19 @@ pipeline {
                 git branch: 'develop', credentialsId: 'GitHub', url: 'https://github.com/GGWPDirecto/P1CD.git'
             }
         }
+        
+        stage('Static Test') {
+            steps {
+                sh '''
+                pip install --quiet flake8 bandit
+
+                flake8 src/ > flake8-report.txt || true
+
+                bandit -r src/ -f txt -o bandit-report.txt || true
+                '''
+
+                archiveArtifacts artifacts: 'flake8-report.txt, bandit-report.txt', allowEmptyArchive: true
+            }
+        }
     }
 }
-
