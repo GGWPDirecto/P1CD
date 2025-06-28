@@ -2,8 +2,7 @@ pipeline {
     agent any
 
     environment {
-        MY_LOCAL_BIN = "/home/ubuntu/.local/bin"
-        PATH = "${MY_LOCAL_BIN}:${env.PATH}"
+        PATH = "/home/ubuntu/.local/bin:${env.PATH}"
     }
 
     stages {
@@ -30,14 +29,22 @@ pipeline {
                     sam build
                     sam validate --region us-east-1
 
-                    sam deploy --no-confirm-changeset --no-fail-on-empty-changeset \\
-                      --stack-name p1cd-stack \\
-                      --capabilities CAPABILITY_IAM \\
-                      --s3-bucket p1cd-deploy-bucket-carlos \\
-                      --region us-east-1 \\
+                    sam deploy --no-confirm-changeset --no-fail-on-empty-changeset \
+                      --stack-name p1cd-stack \
+                      --capabilities CAPABILITY_IAM \
+                      --s3-bucket p1cd-deploy-bucket-carlos \
+                      --region us-east-1 \
                       --parameter-overrides Env=staging
                     '''
-                    def apiUrl = sh(script: "aws cloudformation describe-stacks --stack-name p1cd-stack --region us-east-1 --query 'Stacks[0].Outputs[?OutputKey==`BaseUrlApi`].OutputValue' --output text", returnStdout: true).trim()
+                    def apiUrl = sh(
+                        script: "aws cloudformation describe-stacks --stack-name p1cd-stack --region us-east-1 --query 'Stacks[0].Outputs[?OutputKey==`BaseUrlApi`].OutputValue' --output text",
+                        returnStdout: true
+                    ).trim()
+
+                    if (!apiUrl) {
+                        error "API_GATEWAY_URL no está definida. Revisa el despliegue o la consulta a CloudFormation."
+                    }
+
                     env.API_GATEWAY_URL = apiUrl
                     echo "API Gateway URL para Staging: ${env.API_GATEWAY_URL}"
                 }
@@ -54,11 +61,6 @@ pipeline {
         }
 
         stage('Promote') {
-            when {
-                expression {
-                    return currentBuild.result == 'SUCCESS'
-                }
-            }
             steps {
                 script {
                     echo 'Preparando merge de develop a master...'
@@ -70,4 +72,19 @@ pipeline {
                     sh 'git pull origin master'
 
                     def now = new Date().format("yyyy-MM-dd HH:mm:ss")
-                    sh '
+                    sh "echo -e \"\\n${now} - forzando cambio que active mergeo ${currentBuild.displayName} desde develop.\" >> CHANGELOG.md"
+
+                    sh 'git add CHANGELOG.md'
+                    sh "git commit -m \"creando cambio automático que fuerza el mergeo ${currentBuild.displayName}\""
+
+                    echo 'Realizando merge de develop a master, manteniendo Jenkinsfile de master...'
+                    sh "git merge --no-ff develop -m \"mergeado completo ; ) NICE. Build: ${currentBuild.displayName}\" -X ours=Jenkinsfile"
+
+                    echo 'Subiendo cambios a origin master...'
+                    sh 'git push origin master'
+                    echo 'Merge a master completado. Versión marcada para despliegue en producción. LEtsssss GOOOOO'
+                }
+            }
+        }
+    }
+}
