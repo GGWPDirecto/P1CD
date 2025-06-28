@@ -47,7 +47,40 @@ pipeline {
         stage('Rest Test') {
             steps {
                 script {
+                    echo "Ejecutando pruebas de integración contra: ${env.API_GATEWAY_URL}"
                     sh "BASE_URL=${env.API_GATEWAY_URL} python3 -m pytest test/integration/todoApiTest.py"
+                }
+            }
+        }
+
+        ---
+        stage('Promote') {
+            when {
+                expression {
+                    // Esta etapa solo se ejecuta si todas las etapas anteriores fueron exitosas.
+                    return currentBuild.result == 'SUCCESS'
+                }
+            }
+            steps {
+                script {
+                    echo 'Preparando merge de develop a master...'
+
+                    sh 'git checkout master'
+                    sh 'git pull origin master' 
+
+                    def now = new Date().format("yyyy-MM-dd HH:mm:ss")
+                    sh "echo \"\\n${now} - forzando cambio que active mergeo ${currentBuild.displayName} desde develop.\" >> CHANGELOG.md"
+                    sh 'git add CHANGELOG.md'
+                    sh 'git commit -m "creando cambio automático que fuerza el mergeo ${currentBuild.displayName}"'
+
+                 
+                    echo 'Realizando merge de develop a master, manteniendo Jenkinsfile de master...'
+                    sh 'git merge --no-ff develop -m "mergeado completo ; ) NICE. Build: ${currentBuild.displayName}" -X ours=Jenkinsfile'
+
+                    // Subir los cambios a master
+                    echo 'Subiendo cambios a origin master...'
+                    sh 'git push origin master'
+                    echo 'Merge a master completado. Versión marcada para despliegue en producción.LEtsssss GOOOOO'
                 }
             }
         }
