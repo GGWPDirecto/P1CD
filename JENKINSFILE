@@ -54,12 +54,6 @@ pipeline {
         }
 
         stage('Promote') {
-            when {
-                expression {
-                    // Esta etapa solo se ejecuta si todas las etapas anteriores fueron exitosas.
-                    return currentBuild.result == 'SUCCESS'
-                }
-            }
             steps {
                 script {
                     echo 'Preparando merge de develop a master...'
