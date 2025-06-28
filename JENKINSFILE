@@ -28,7 +28,6 @@ pipeline {
                     sh '''
                     sam build
                     sam validate --region us-east-1
-
                     sam deploy --no-confirm-changeset --no-fail-on-empty-changeset \
                       --stack-name p1cd-stack \
                       --capabilities CAPABILITY_IAM \
@@ -68,34 +67,28 @@ pipeline {
             }
             steps {
                 script {
-                    echo 'Preparando merge de develop a master manteniendo Jenkinsfile de master...'
+                    echo 'Iniciando promoción de develop a master, excluyendo el Jenkinsfile.'
 
                     sh 'git checkout master'
-                    sh 'git fetch origin'
+                    sh 'git fetch origin master'
                     sh 'git reset --hard origin/master'
 
-                    def now = new Date().format("yyyy-MM-dd HH:mm:ss")
-                    sh "echo -e \"\\n${now} - forzando cambio que active mergeo ${currentBuild.displayName} desde develop.\" >> CHANGELOG.md"
+                    sh 'git merge --no-ff --no-commit develop'
+                    
+                    echo 'Restaurando el Jenkinsfile de master...'
+                    sh 'git checkout HEAD -- Jenkinsfile'
 
-                    sh 'git add CHANGELOG.md'
-                    sh "git commit -m \"creando cambio automático que fuerza el mergeo ${currentBuild.displayName}\""
+                    sh 'git commit -m "Merge branch \'develop\' into \'master\' (CI/CD: Jenkinsfile excluido)"'
 
-                    echo 'Haciendo merge de develop a master usando estrategia recursive sin commit para resolver Jenkinsfile...'
-                    sh 'git merge --no-commit --no-ff develop'
-
-                    echo 'Restaurando Jenkinsfile original de master para evitar conflictos y preservar pipeline CD...'
-                    sh 'git checkout --ours JENKINSFILE'
-                    sh 'git add JENKINSFILE'
-
-                    echo 'Finalizando commit del merge... Si sale esto en el JENKISFILE de master es que la cosa no ha salido como debería'
-                    sh "git commit -m \"Merge automático de develop a master excluyendo cambios en Jenkinsfile. Build: ${currentBuild.displayName}\""
-
+                    echo 'Subiendo cambios a master...'
                     withCredentials([usernamePassword(credentialsId: 'GitHub', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
                         sh '''
                         git remote set-url origin https://${GIT_USER}:${GIT_TOKEN}@github.com/GGWPDirecto/P1CD.git
                         git push origin master
                         '''
                     }
+
+                    echo 'Promoción a master finalizada. El Jenkinsfile de master no fue modificado si no aparece este mensaje.'
                 }
             }
         }
