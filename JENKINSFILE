@@ -1,4 +1,4 @@
-pipeline {
+ospipeline {
     agent any
 
     environment {
@@ -27,7 +27,7 @@ pipeline {
             steps {
                 sh '''
                 sam build
-                sam validate
+                sam validate --region us-east-1
 
                 sam deploy --no-confirm-changeset --no-fail-on-empty-changeset \
                   --stack-name p1cd-stack \
