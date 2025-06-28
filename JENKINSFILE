@@ -87,7 +87,7 @@ pipeline {
                     sh 'git checkout --ours JENKINSFILE'
                     sh 'git add JENKINSFILE'
 
-                    echo 'Finalizando commit del merge...'
+                    echo 'Finalizando commit del merge... Si sale esto en el JENKISFILE de master es que la cosa no ha salido como debería'
                     sh "git commit -m \"Merge automático de develop a master excluyendo cambios en Jenkinsfile. Build: ${currentBuild.displayName}\""
 
                     withCredentials([usernamePassword(credentialsId: 'GitHub', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
