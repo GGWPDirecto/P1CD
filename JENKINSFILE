@@ -11,8 +11,6 @@ pipeline {
         stage('Static Test') {
             steps {
                 sh '''
-                pip install --quiet flake8 bandit
-
                 flake8 src/ > flake8-report.txt || true
 
                 bandit -r src/ -f txt -o bandit-report.txt || true
