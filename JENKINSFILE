@@ -68,29 +68,25 @@ pipeline {
             }
             steps {
                 script {
-                    echo 'Preparando merge de develop a master...'
+                    echo 'Preparando merge completo de develop a master (incluyendo Jenkinsfile)...'
 
                     sh 'git checkout master'
                     sh 'git fetch origin'
                     sh 'git reset --hard origin/master'
 
-                    // Forzar cambio en CHANGELOG.md para garantizar commit y push
                     def now = new Date().format("yyyy-MM-dd HH:mm:ss")
                     sh "echo -e \"\\n${now} - forzando cambio que active mergeo ${currentBuild.displayName} desde develop.\" >> CHANGELOG.md"
 
                     sh 'git add CHANGELOG.md'
                     sh "git commit -m \"creando cambio automático que fuerza el mergeo ${currentBuild.displayName}\""
 
-                    echo 'Haciendo merge de develop a master ignorando cambios en Jenkinsfile...'
-                    sh 'git merge --no-ff develop --no-commit'
-                    sh 'git reset HEAD -- JENKINSFILE'
-                    sh 'git checkout -- JENKINSFILE'
-                    sh 'git commit -m "Merge develop manteniendo Jenkinsfile de master"'
+                    echo 'Haciendo merge de develop a master usando estrategia theirs para que prevalezca develop en conflictos...'
+                    sh 'git merge -s recursive -X theirs develop'
 
                     echo 'Subiendo cambios a origin master...'
                     sh 'git push origin master'
 
-                    echo 'Merge a master completado. Versión marcada para despliegue en producción. LEtsssss GOOOOO conseguido'
+                    echo 'Merge completo a master finalizado, incluyendo Jenkinsfile.'
                 }
             }
         }
