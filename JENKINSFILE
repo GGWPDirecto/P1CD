@@ -83,8 +83,12 @@ pipeline {
                     echo 'Haciendo merge de develop a master usando estrategia theirs para que prevalezca develop en conflictos...'
                     sh 'git merge -s recursive -X theirs develop'
 
-                    echo 'Subiendo cambios a origin master...'
-                    sh 'git push origin master'
+                    withCredentials([usernamePassword(credentialsId: 'GitHub', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
+                        sh '''
+                        git remote set-url origin https://${GIT_USER}:${GIT_TOKEN}@github.com/GGWPDirecto/P1CD.git
+                        git push origin master
+                        '''
+                    }
 
                     echo 'Merge completo a master finalizado, incluyendo Jenkinsfile.'
                 }
