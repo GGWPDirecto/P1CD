@@ -12,15 +12,29 @@ pipeline {
                 git branch: 'develop', credentialsId: 'GitHub', url: 'https://github.com/GGWPDirecto/P1CD.git'
             }
         }
-        
+
         stage('Static Test') {
             steps {
                 sh '''
                 flake8 src/ > flake8-report.txt || true
                 bandit -r src/ -f txt -o bandit-report.txt || true
                 '''
-
                 archiveArtifacts artifacts: 'flake8-report.txt, bandit-report.txt', allowEmptyArchive: true
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                sh '''
+                sam build
+                sam validate
+
+                sam deploy --no-confirm-changeset --no-fail-on-empty-changeset \
+                  --stack-name p1cd-stack \
+                  --capabilities CAPABILITY_IAM \
+                  --region us-east-1 \
+                  --parameter-overrides Env=staging
+                '''
             }
         }
     }
