@@ -1,6 +1,11 @@
 pipeline {
     agent any
 
+    environment {
+        MY_LOCAL_BIN = "/home/ubuntu/.local/bin"
+        PATH = "${MY_LOCAL_BIN}:${env.PATH}"
+    }
+
     stages {
         stage('Get Code') {
             steps {
@@ -12,7 +17,6 @@ pipeline {
             steps {
                 sh '''
                 flake8 src/ > flake8-report.txt || true
-
                 bandit -r src/ -f txt -o bandit-report.txt || true
                 '''
 
