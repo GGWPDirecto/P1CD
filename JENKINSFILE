@@ -68,7 +68,7 @@ pipeline {
             }
             steps {
                 script {
-                    echo 'Preparando merge completo de develop a master (incluyendo Jenkinsfile)...'
+                    echo 'Preparando merge de develop a master manteniendo Jenkinsfile de master...'
 
                     sh 'git checkout master'
                     sh 'git fetch origin'
@@ -80,8 +80,15 @@ pipeline {
                     sh 'git add CHANGELOG.md'
                     sh "git commit -m \"creando cambio automático que fuerza el mergeo ${currentBuild.displayName}\""
 
-                    echo 'Haciendo merge de develop a master usando estrategia theirs para que prevalezca develop en conflictos...'
-                    sh 'git merge -s recursive -X theirs develop'
+                    echo 'Haciendo merge de develop a master usando estrategia recursive sin commit para resolver Jenkinsfile...'
+                    sh 'git merge --no-commit --no-ff develop'
+
+                    echo 'Restaurando Jenkinsfile original de master para evitar conflictos y preservar pipeline CD...'
+                    sh 'git checkout --ours JENKINSFILE'
+                    sh 'git add JENKINSFILE'
+
+                    echo 'Finalizando commit del merge...'
+                    sh "git commit -m \"Merge automático de develop a master excluyendo cambios en Jenkinsfile. Build: ${currentBuild.displayName}\""
 
                     withCredentials([usernamePassword(credentialsId: 'GitHub', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
                         sh '''
@@ -89,8 +96,6 @@ pipeline {
                         git push origin master
                         '''
                     }
-
-                    echo 'Merge completo a master finalizado, incluyendo Jenkinsfile.'
                 }
             }
         }
