@@ -78,7 +78,7 @@ pipeline {
                     sh 'git fetch origin master'
                     sh 'git reset --hard origin/master'
 
-                    // Forzamos un cambio para garantizar que el commit de merge siempre sea posible
+                
                     echo "Forzando cambio para el build ${currentBuild.displayName} para garantizar el merge commit." > .force_merge
                     sh 'git add .force_merge'
 
