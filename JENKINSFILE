@@ -69,9 +69,6 @@ pipeline {
                 script {
                     echo 'Iniciando promoción de develop a master, excluyendo el JENKINSFILE.'
 
-                    sh 'git config user.name "Jenkins CI"'
-                    sh 'git config user.email "jenkins@tu-dominio.com"'
-
                     sh 'git checkout master'
                     sh 'git fetch origin master'
                     sh 'git reset --hard origin/master'
