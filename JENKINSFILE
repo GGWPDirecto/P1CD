@@ -73,7 +73,8 @@ pipeline {
                     sh 'git fetch origin master'
                     sh 'git reset --hard origin/master'
 
-                    sh 'git merge --no-ff --no-commit develop'
+                    // -- Linea Corregida --
+                    sh 'git merge --no-ff --no-commit develop || true'
                     
                     echo 'Restaurando el JENKINSFILE de master...'
                     sh 'git checkout HEAD -- JENKINSFILE'
