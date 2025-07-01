@@ -8,17 +8,7 @@ pipeline {
     stages {
         stage('Get Code') {
             steps {
-                git branch: 'develop', credentialsId: 'GitHub', url: 'https://github.com/GGWPDirecto/P1CD.git'
-            }
-        }
-
-        stage('Static Test') {
-            steps {
-                sh '''
-                flake8 src/ > flake8-report.txt || true
-                bandit -r src/ -f txt -o bandit-report.txt || true
-                '''
-                archiveArtifacts artifacts: 'flake8-report.txt, bandit-report.txt', allowEmptyArchive: true
+                git branch: 'master', credentialsId: 'GitHub', url: 'https://github.com/GGWPDirecto/P1CD.git'
             }
         }
 
@@ -28,16 +18,15 @@ pipeline {
                     sh '''
                     sam build
                     sam validate --region us-east-1
-
                     sam deploy --no-confirm-changeset --no-fail-on-empty-changeset \
-                      --stack-name p1cd-stack \
+                      --stack-name p1cd-stack-prod \
                       --capabilities CAPABILITY_IAM \
                       --s3-bucket p1cd-deploy-bucket-carlos \
                       --region us-east-1 \
-                      --parameter-overrides Env=staging
+                      --parameter-overrides Env=production
                     '''
                     def apiUrl = sh(
-                        script: "aws cloudformation describe-stacks --stack-name p1cd-stack --region us-east-1 --query 'Stacks[0].Outputs[?OutputKey==`BaseUrlApi`].OutputValue' --output text",
+                        script: "aws cloudformation describe-stacks --stack-name p1cd-stack-prod --region us-east-1 --query 'Stacks[0].Outputs[?OutputKey==`BaseUrlApi`].OutputValue' --output text",
                         returnStdout: true
                     ).trim()
 
@@ -46,7 +35,7 @@ pipeline {
                     }
 
                     env.API_GATEWAY_URL = apiUrl
-                    echo "API Gateway URL para Staging: ${env.API_GATEWAY_URL}"
+                    echo "API Gateway URL para Production: ${env.API_GATEWAY_URL}"
                 }
             }
         }
@@ -54,48 +43,14 @@ pipeline {
         stage('Rest Test') {
             steps {
                 script {
-                    echo "Ejecutando pruebas de integración contra: ${env.API_GATEWAY_URL}"
-                    sh "BASE_URL=${env.API_GATEWAY_URL} python3 -m pytest test/integration/todoApiTest.py"
+                    echo "Ejecutando pruebas de solo lectura contra: ${env.API_GATEWAY_URL}"
+                    // Se usa el marcador '-m readonly' para ejecutar solo las pruebas marcadas como de solo lectura
+                    sh "BASE_URL=${env.API_GATEWAY_URL} python3 -m pytest -m readonly --junitxml=report.xml test/integration/todoApiTest.py || true"
                 }
             }
-        }
-
-        stage('Promote') {
-            when {
-                expression {
-                    return currentBuild.result == null || currentBuild.result == 'SUCCESS'
-                }
-            }
-            steps {
-                script {
-                    echo 'Preparando merge de develop a master manteniendo Jenkinsfile de master...'
-
-                    sh 'git checkout master'
-                    sh 'git fetch origin'
-                    sh 'git reset --hard origin/master'
-
-                    def now = new Date().format("yyyy-MM-dd HH:mm:ss")
-                    sh "echo -e \"\\n${now} - forzando cambio que active mergeo ${currentBuild.displayName} desde develop.\" >> CHANGELOG.md"
-
-                    sh 'git add CHANGELOG.md'
-                    sh "git commit -m \"creando cambio automático que fuerza el mergeo ${currentBuild.displayName}\""
-
-                    echo 'Haciendo merge de develop a master usando estrategia recursive sin commit para resolver Jenkinsfile...'
-                    sh 'git merge --no-commit --no-ff develop'
-
-                    echo 'Restaurando Jenkinsfile original de master para evitar conflictos y preservar pipeline CD...'
-                    sh 'git checkout --ours JENKINSFILE'
-                    sh 'git add JENKINSFILE'
-
-                    echo 'Finalizando commit del merge... Si sale esto en el JENKISFILE de master es que la cosa no ha salido como debería'
-                    sh "git commit -m \"Merge automático de develop a master excluyendo cambios en Jenkinsfile. Build: ${currentBuild.displayName}\""
-
-                    withCredentials([usernamePassword(credentialsId: 'GitHub', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
-                        sh '''
-                        git remote set-url origin https://${GIT_USER}:${GIT_TOKEN}@github.com/GGWPDirecto/P1CD.git
-                        git push origin master
-                        '''
-                    }
+            post {
+                always {
+                    junit 'report.xml'
                 }
             }
         }
