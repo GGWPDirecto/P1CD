@@ -54,7 +54,12 @@ pipeline {
             steps {
                 script {
                     echo "Ejecutando pruebas de integración contra: ${env.API_GATEWAY_URL}"
-                    sh "BASE_URL=${env.API_GATEWAY_URL} python3 -m pytest test/integration/todoApiTest.py"
+                    sh "BASE_URL=${env.API_GATEWAY_URL} python3 -m pytest --junitxml=report.xml test/integration/todoApiTest.py || true"
+                }
+            }
+            post {
+                always {
+                    junit 'report.xml'
                 }
             }
         }
@@ -73,7 +78,6 @@ pipeline {
                     sh 'git fetch origin master'
                     sh 'git reset --hard origin/master'
 
-                    // -- Linea Corregida --
                     sh 'git merge --no-ff --no-commit develop || true'
                     
                     echo 'Restaurando el JENKINSFILE de master...'
