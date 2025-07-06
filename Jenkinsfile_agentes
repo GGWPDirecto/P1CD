@@ -106,7 +106,8 @@ pipeline {
                         echo 'Forzando cambio para el build ${BUILD_DISPLAY_NAME}' > .force_merge
                         git add .force_merge
                         
-                        git merge --no-ff --no-commit develop || true
+                        # Corregido: Usar origin/develop para referenciar la rama remota
+                        git merge --no-ff --no-commit origin/develop || true
                         
                         echo 'Restaurando el Jenkinsfile_agentes de master...'
                         git checkout HEAD -- Jenkinsfile_agentes
