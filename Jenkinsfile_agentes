@@ -101,9 +101,9 @@ pipeline {
                         echo 'Forzando cambio para el build ${BUILD_DISPLAY_NAME}' > .force_merge
                         git add .force_merge
                         git merge --no-ff --no-commit develop || true
-                        echo 'Restaurando el JENKINSFILE de master...'
-                        git checkout HEAD -- JENKINSFILE
-                        git commit -m "Merge branch 'develop' into 'master' (CI/CD: JENKINSFILE excluido)"
+                        echo 'Restaurando el Jenkinsfile_agentes de master...'
+                        git checkout HEAD -- Jenkinsfile_agentes
+                        git commit -m "Merge branch 'develop' into 'master' (CI/CD: Jenkinsfile_agentes excluido)"
                         echo 'Subiendo cambios a master...'
                         git push origin master
                         '''
