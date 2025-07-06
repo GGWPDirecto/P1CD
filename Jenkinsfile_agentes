@@ -39,6 +39,7 @@ pipeline {
             steps {
                 sh 'echo "--- Ejecutando en: $(hostname) --- Usuario: $(whoami) ---"'
                 unstash 'source'
+                sh 'echo "Contenido del samconfig.toml descargado:" && cat samconfig.toml'
                 script {
                     sh '''
                     sam build
