@@ -106,12 +106,19 @@ pipeline {
                         echo 'Forzando cambio para el build ${BUILD_DISPLAY_NAME}' > .force_merge
                         git add .force_merge
                         
-                        # Corregido: Usar origin/develop para referenciar la rama remota
+                        # Intentar el merge. Si falla por conflictos, el script continúa gracias a '|| true'
                         git merge --no-ff --no-commit origin/develop || true
                         
+                        # Resolver explícitamente los conflictos conocidos manteniendo la versión de master
                         echo 'Restaurando el Jenkinsfile_agentes de master...'
                         git checkout HEAD -- Jenkinsfile_agentes
+                        git add Jenkinsfile_agentes
                         
+                        echo 'Restaurando el JENKINSFILE de master para resolver conflictos...'
+                        git checkout HEAD -- JENKINSFILE
+                        git add JENKINSFILE
+
+                        # Ahora el commit funcionará porque los conflictos están resueltos
                         git commit -m "Merge branch 'develop' into 'master' (CI/CD: Jenkinsfile_agentes excluido)"
                         
                         echo 'Subiendo cambios a master...'
