@@ -7,6 +7,10 @@ pipeline {
             steps {
                 sh 'echo "--- Ejecutando en: $(hostname) --- Usuario: $(whoami) ---"'
                 git branch: 'develop', credentialsId: 'GitHub', url: 'https://github.com/GGWPDirecto/P1CD.git'
+                
+                echo "Descargando configuración de 'staging'..."
+                sh 'curl -L https://raw.githubusercontent.com/GGWPDirecto/todo-list-aws-config/staging/samconfig.toml -o samconfig.toml'
+
                 stash name: 'source', includes: '**/*'
             }
         }
@@ -38,13 +42,7 @@ pipeline {
                 script {
                     sh '''
                     sam build
-                    sam validate --region us-east-1
-                    sam deploy --no-confirm-changeset --no-fail-on-empty-changeset \
-                      --stack-name p1cd-stack \
-                      --capabilities CAPABILITY_IAM \
-                      --s3-bucket p1cd-deploy-bucket-carlos \
-                      --region us-east-1 \
-                      --parameter-overrides Env=staging
+                    sam deploy --config-env staging
                     '''
                     def apiUrl = sh(
                         script: "aws cloudformation describe-stacks --stack-name p1cd-stack --region us-east-1 --query 'Stacks[0].Outputs[?OutputKey==`BaseUrlApi`].OutputValue' --output text",
