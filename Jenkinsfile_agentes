@@ -95,16 +95,15 @@ pipeline {
                     echo 'Iniciando promoción de develop a master.'
                     withCredentials([usernamePassword(credentialsId: 'GitHub', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
                         sh '''
+                        set +x
                         git config --global user.email "jenkins@example.com"
                         git config --global user.name "Jenkins CI"
                         git remote set-url origin https://${GIT_USER}:${GIT_TOKEN}@github.com/GGWPDirecto/P1CD.git
-                        
+                        set -x
+
                         git checkout master
                         git fetch origin master
                         git reset --hard origin/master
-                        
-                        echo 'Forzando cambio para el build ${BUILD_DISPLAY_NAME}' > .force_merge
-                        git add .force_merge
                         
                         # Intentar el merge. Si falla por conflictos, el script continúa gracias a '|| true'
                         git merge --no-ff --no-commit origin/develop || true
@@ -118,8 +117,9 @@ pipeline {
                         git checkout HEAD -- JENKINSFILE
                         git add JENKINSFILE
 
-                        # Ahora el commit funcionará porque los conflictos están resueltos
-                        git commit -m "Merge branch 'develop' into 'master' (CI/CD: Jenkinsfile_agentes excluido)"
+                        # Forzar la creación de un commit, incluso si no hay cambios.
+                        # Esto asegura que siempre haya algo que subir y simplifica la lógica.
+                        git commit --allow-empty -m "Merge branch 'develop' into 'master' (CI/CD: Jenkinsfile_agentes excluido)"
                         
                         echo 'Subiendo cambios a master...'
                         git push origin master
