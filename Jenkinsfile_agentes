@@ -1,0 +1,116 @@
+pipeline {
+    agent none
+
+    stages {
+        stage('Get Code') {
+            agent any
+            steps {
+                git branch: 'develop', credentialsId: 'GitHub', url: 'https://github.com/GGWPDirecto/P1CD.git'
+                stash name: 'source', includes: '**/*'
+            }
+        }
+
+        stage('Static Test') {
+            agent { label 'Nodo1falke8Bandit' }
+            environment {
+                PATH = "/home/ubuntu/.local/bin:${env.PATH}"
+            }
+            steps {
+                unstash 'source'
+                sh '''
+                flake8 src/ > flake8-report.txt || true
+                bandit -r src/ -f txt -o bandit-report.txt || true
+                '''
+                archiveArtifacts artifacts: 'flake8-report.txt, bandit-report.txt', allowEmptyArchive: true
+            }
+        }
+
+        stage('Deploy') {
+            agent any
+            environment {
+                PATH = "/home/ubuntu/.local/bin:${env.PATH}"
+            }
+            steps {
+                unstash 'source'
+                script {
+                    sh '''
+                    sam build
+                    sam validate --region us-east-1
+                    sam deploy --no-confirm-changeset --no-fail-on-empty-changeset \
+                      --stack-name p1cd-stack \
+                      --capabilities CAPABILITY_IAM \
+                      --s3-bucket p1cd-deploy-bucket-carlos \
+                      --region us-east-1 \
+                      --parameter-overrides Env=staging
+                    '''
+                    def apiUrl = sh(
+                        script: "aws cloudformation describe-stacks --stack-name p1cd-stack --region us-east-1 --query 'Stacks[0].Outputs[?OutputKey==`BaseUrlApi`].OutputValue' --output text",
+                        returnStdout: true
+                    ).trim()
+
+                    if (!apiUrl) {
+                        error "API_GATEWAY_URL no está definida."
+                    }
+                    
+                    writeFile file: 'api_url.txt', text: apiUrl
+                    stash name: 'apiData', includes: 'api_url.txt'
+                }
+            }
+        }
+
+        stage('Rest Test') {
+            agent { label 'Nodo2Pytest' }
+            environment {
+                PATH = "/home/ubuntu/.local/bin:${env.PATH}"
+            }
+            steps {
+                unstash 'source'
+                unstash 'apiData'
+                script {
+                    def apiUrl = readFile('api_url.txt').trim()
+                    env.API_GATEWAY_URL = apiUrl
+                    
+                    echo "Ejecutando pruebas de integración contra: ${env.API_GATEWAY_URL}"
+                    sh "BASE_URL=${env.API_GATEWAY_URL} python3 -m pytest --junitxml=report.xml test/integration/todoApiTest.py || true"
+                }
+            }
+            post {
+                always {
+                    junit 'report.xml'
+                }
+            }
+        }
+
+        stage('Promote') {
+            agent any
+            when {
+                expression { return currentBuild.result == null || currentBuild.result == 'SUCCESS' }
+            }
+            steps {
+                unstash 'source'
+                script {
+                    echo 'Iniciando promoción de develop a master.'
+                    withCredentials([usernamePassword(credentialsId: 'GitHub', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
+                        sh '''
+                        git config --global user.email "jenkins@example.com"
+                        git config --global user.name "Jenkins CI"
+                        git remote set-url origin https://${GIT_USER}:${GIT_TOKEN}@github.com/GGWPDirecto/P1CD.git
+                        git checkout master
+                        git fetch origin master
+                        git reset --hard origin/master
+                        echo 'Forzando cambio para el build ${BUILD_DISPLAY_NAME}' > .force_merge
+                        git add .force_merge
+                        git merge --no-ff --no-commit develop || true
+                        echo 'Restaurando el JENKINSFILE de master...'
+                        git checkout HEAD -- JENKINSFILE
+                        git commit -m "Merge branch 'develop' into 'master' (CI/CD: JENKINSFILE excluido)"
+                        echo 'Subiendo cambios a master...'
+                        git push origin master
+                        '''
+                    }
+                    echo 'Promoción a master finalizada.'
+                }
+            }
+        }
+    }
+}
