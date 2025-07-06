@@ -5,6 +5,7 @@ pipeline {
         stage('Get Code') {
             agent any
             steps {
+                sh 'echo "--- Ejecutando en: $(hostname) --- Usuario: $(whoami) ---"'
                 git branch: 'develop', credentialsId: 'GitHub', url: 'https://github.com/GGWPDirecto/P1CD.git'
                 stash name: 'source', includes: '**/*'
             }
@@ -16,6 +17,7 @@ pipeline {
                 PATH = "/home/ubuntu/.local/bin:${env.PATH}"
             }
             steps {
+                sh 'echo "--- Ejecutando en: $(hostname) --- Usuario: $(whoami) ---"'
                 unstash 'source'
                 sh '''
                 flake8 src/ > flake8-report.txt || true
@@ -31,6 +33,7 @@ pipeline {
                 PATH = "/home/ubuntu/.local/bin:${env.PATH}"
             }
             steps {
+                sh 'echo "--- Ejecutando en: $(hostname) --- Usuario: $(whoami) ---"'
                 unstash 'source'
                 script {
                     sh '''
@@ -64,6 +67,7 @@ pipeline {
                 PATH = "/home/ubuntu/.local/bin:${env.PATH}"
             }
             steps {
+                sh 'echo "--- Ejecutando en: $(hostname) --- Usuario: $(whoami) ---"'
                 unstash 'source'
                 unstash 'apiData'
                 script {
@@ -90,6 +94,7 @@ pipeline {
                 expression { return currentBuild.result == null || currentBuild.result == 'SUCCESS' }
             }
             steps {
+                sh 'echo "--- Ejecutando en: $(hostname) --- Usuario: $(whoami) ---"'
                 unstash 'source'
                 script {
                     echo 'Iniciando promoción de develop a master.'
@@ -105,10 +110,8 @@ pipeline {
                         git fetch origin master
                         git reset --hard origin/master
                         
-                        # Intentar el merge. Si falla por conflictos, el script continúa gracias a '|| true'
                         git merge --no-ff --no-commit origin/develop || true
                         
-                        # Resolver explícitamente los conflictos conocidos manteniendo la versión de master
                         echo 'Restaurando el Jenkinsfile_agentes de master...'
                         git checkout HEAD -- Jenkinsfile_agentes
                         git add Jenkinsfile_agentes
@@ -117,8 +120,6 @@ pipeline {
                         git checkout HEAD -- JENKINSFILE
                         git add JENKINSFILE
 
-                        # Forzar la creación de un commit, incluso si no hay cambios.
-                        # Esto asegura que siempre haya algo que subir y simplifica la lógica.
                         git commit --allow-empty -m "Merge branch 'develop' into 'master' (CI/CD: Jenkinsfile_agentes excluido)"
                         
                         echo 'Subiendo cambios a master...'
