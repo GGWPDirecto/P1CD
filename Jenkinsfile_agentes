@@ -5,6 +5,7 @@ pipeline {
         stage('Get Code') {
             agent any
             steps {
+                sh 'echo "--- Ejecutando en: $(hostname) --- Usuario: $(whoami) ---"'
                 git branch: 'master', credentialsId: 'GitHub', url: 'https://github.com/GGWPDirecto/P1CD.git'
                 stash name: 'source', includes: '**/*'
             }
@@ -16,6 +17,7 @@ pipeline {
                 PATH = "/home/ubuntu/.local/bin:${env.PATH}"
             }
             steps {
+                sh 'echo "--- Ejecutando en: $(hostname) --- Usuario: $(whoami) ---"'
                 unstash 'source'
                 script {
                     sh '''
@@ -49,6 +51,7 @@ pipeline {
                 PATH = "/home/ubuntu/.local/bin:${env.PATH}"
             }
             steps {
+                sh 'echo "--- Ejecutando en: $(hostname) --- Usuario: $(whoami) ---"'
                 unstash 'source'
                 unstash 'apiData'
                 script {
@@ -67,4 +70,3 @@ pipeline {
         }
     }
 }
-
